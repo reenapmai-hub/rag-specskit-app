@@ -1,0 +1,32 @@
+# Task 1: Setup environment & credentials with tested versions
+# Flask web framework for API routes
+Flask==3.0.0
+
+# Flask CORS support for frontend requests
+Flask-CORS==4.0.0
+
+# ChromaDB vector database client (v1.0.0+ required for Cloud compatibility)
+chromadb==1.0.0
+
+# Numeric computing (constraint: numpy<2)
+numpy==1.26.4
+
+# HTTP client for external API calls (Gemini, etc.)
+httpx==0.27.0
+
+# Google Generative AI (Gemini embeddings)
+google-generativeai==0.3.0
+
+# ChromaDB dependencies (pinned for stability)
+requests==2.31.0
+pydantic==2.5.3
+pydantic-core==2.14.6
+
+# Environment variable loading
+python-dotenv==1.0.0
+
+# PDF support for document processing
+pypdf==4.0.1
+
+# Additional ChromaDB/embedding dependencies
+typing-extensions>=4.12.0

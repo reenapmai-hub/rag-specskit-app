@@ -1,0 +1,2 @@
+# Implement Task 1 from .specify/tasks.md
+# Follow .specify/plan.md and .specify/constitution.md

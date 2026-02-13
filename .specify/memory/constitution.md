@@ -1,50 +1,75 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+
+- Version change: unknown -> 1.0.0
+- Modified principles:
+	- (new) Cloud-First Architecture
+	- (new) External Embedding Provider (Zero Local Embeddings)
+	- (new) Minimal Resource Footprint (Stateless Backend)
+	- (new) API Key Security (env vars only)
+	- (new) Fast Cold Starts (<2s target)
+	- (new) Educational Transparency (visible retrieval details)
+	- (new) Version Compatibility & Dependency Constraints
+	- (new) Port & Runtime Defaults (backend default 5001)
+	- (new) Integration Test Coverage (upload→query→reset)
+- Added sections: Additional Constraints, Development Workflow (RAG-specific)
+- Removed sections: none
+- Templates requiring updates:
+	- .specify/templates/plan-template.md ✅ updated
+	- .specify/templates/spec-template.md ✅ updated
+	- .specify/templates/tasks-template.md ✅ updated
+- Follow-up TODOs:
+	- RATIFICATION_DATE: TODO(RATIFICATION_DATE): original adoption date unknown; project lead to fill
+-->
+
+# RAG App Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### Cloud-First Architecture
+All runtime vector storage and retrieval MUST use cloud-hosted ChromaDB Cloud (v2 API). Local or on-disk vector stores are PROHIBITED for production and CI tests that claim "cloud-first" compliance. Rationale: Simplifies deployment, scales independently, and aligns with cold-start goals.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### External Embedding Provider (Zero Local Embeddings)
+All embeddings MUST be produced via a managed embeddings API (Gemini or equivalent). Generating or persisting embeddings locally or via downloaded models is PROHIBITED. Embedding operations MUST be stateless and invoked at ingestion/query time as needed.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### Minimal Resource Footprint (Stateless Backend)
+Backends MUST not require local model artifacts or GPU resources. Services should be stateless where possible, use environment configuration for credentials, and keep memory/CPU usage minimal to meet fast cold starts.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### API Key Security
+All secrets (ChromaDB API keys, Gemini credentials) MUST be supplied via environment variables and never committed. Developers MUST provide guidance for secure secret injection in CI/CD and deployment manifests.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### Fast Cold Starts
+The system MUST be deployable and reach a query-ready state in under 2 seconds on supported cloud platforms (POC target). Design decisions that materially increase startup time are disallowed without explicit justification.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+### Educational Transparency
+Every query path MUST expose retrieval metadata (retrieved document ids, similarity scores, retrieval timestamps, and retrieval chain) to enable debugging and teachability. Defaults may redact sensitive content but must preserve scores/steps.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### Version Compatibility & Dependency Constraints
+The project MUST target ChromaDB >=0.6.0 (v2 cloud API) and must constrain `numpy` to a <2.x range to maintain compatibility with ChromaDB. Any changes to minimum versions MUST follow governance rules for version bumps.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+### Port & Runtime Defaults
+Backend services MUST default to port `5001`. The constitution documents this as the standard to avoid macOS port conflicts and ensure consistent quickstart instructions.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### Integration Test Coverage (NON-NEGOTIABLE)
+Integration tests MUST cover the upload→query→reset lifecycle using real credentials (in a gated CI environment or local developer-run step with ephemeral keys). Tests that mock the full cloud path can be supplementary but not replacements for the gated real-credentials test.
+
+## Additional Constraints
+
+- Dependency constraints: `chromadb >=0.6.0`, `numpy <2.0.0`.
+- Embeddings: Managed API only (Gemini); no local embedding computation.
+- Storage: ChromaDB Cloud only for vector storage used by the RAG pipeline.
+- Observability: Retrieval traces and similarity scores MUST be logged and available via API responses or a debug endpoint.
+
+## Development Workflow
+
+- Secrets: Use environment variables and secrets managers. CI jobs that run the gated integration tests MUST obtain ephemeral credentials and revoke them after the run.
+- Testing gates: Unit tests MAY run without cloud credentials. The final integration test for declaring feature "done" MUST run with real cloud credentials and pass upload→query→reset.
+- Ports: Default backend port `5001`. Override via `PORT` env var only when necessary.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+- Amendments: Changes to principles that remove or redefine existing principles are MAJOR and require a written proposal, migration plan, and two approvers. Adding principles or clarifications is MINOR. Non-substantive wording/typo fixes are PATCH.
+- Versioning policy: Follow semantic versioning for the constitution text: MAJOR for breaking governance changes, MINOR for adding principles, PATCH for clarifications.
+- Compliance review: All PRs touching infra, deployment, or dependency versions MUST reference the constitution and include a short compliance checklist.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: TODO(RATIFICATION_DATE) | **Last Amended**: 2026-02-13

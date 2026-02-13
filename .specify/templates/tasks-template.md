@@ -69,6 +69,14 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] T008 Configure error handling and logging infrastructure
 - [ ] T009 Setup environment configuration management
 
+Additional foundational tasks for RAG projects (must be included):
+
+- [ ] T009a Configure ChromaDB Cloud client and verify `chromadb >=0.6.0` compatibility in `backend/`.
+- [ ] T009b Add environment-managed secrets for ChromaDB and Gemini credentials and document CI secret injection.
+- [ ] T009c Enforce `numpy <2.0.0` in dependency manifests and document rationale.
+- [ ] T009d Add an integration test harness (gated CI job) to run upload→query→reset with ephemeral credentials.
+- [ ] T009e Ensure backend defaults to port `5001` and document how to override via `PORT` env var.
+
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
 ---

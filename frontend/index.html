@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Document Search</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 40px;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Upload Section */
+        .section {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 30px;
+            background: #f9f9f9;
+        }
+
+        .section h2 {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .upload-zone {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+
+        .upload-zone:hover {
+            border-color: #764ba2;
+            background: #f5f7ff;
+        }
+
+        .upload-zone.dragover {
+            border-color: #764ba2;
+            background: #f5f7ff;
+        }
+
+        .upload-zone svg {
+            width: 48px;
+            height: 48px;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .upload-zone p {
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .upload-zone .hint {
+            font-size: 13px;
+            color: #999;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .progress-container {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .progress-container.visible {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #667eea;
+            font-size: 14px;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+
+        .upload-feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .upload-feedback.visible {
+            display: block;
+        }
+
+        .upload-feedback.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #4caf50;
+        }
+
+        .upload-feedback.error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #f44336;
+        }
+
+        /* Query Section */
+        .query-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        #queryInput {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        #queryInput:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #d32f2f;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(244, 67, 54, 0.3);
+        }
+
+        /* Results Section */
+        .results-container {
+            margin-top: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .result-item {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+
+        .result-item:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: #667eea;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .result-score {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .result-metadata {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .metadata-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .metadata-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .result-text {
+            color: #333;
+            line-height: 1.6;
+            font-size: 14px;
+            word-break: break-word;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+        }
+
+        /* Stats Widget */
+        .stats-widget {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .stat-value {
+            color: #333;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.visible {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-content h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .modal-content p {
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .modal-actions .btn {
+            flex: 1;
+        }
+
+        .btn-cancel {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-cancel:hover {
+            background: #d0d0d0;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(102, 126, 234, 0.3);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .status-text {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #667eea;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 RAG Document Search</h1>
+            <p>Upload documents and search with AI-powered semantic similarity</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Left Column: Upload & Stats -->
+            <div>
+                <!-- Upload Section -->
+                <div class="section">
+                    <h2>
+                        <span>📄</span>
+                        Upload Documents
+                    </h2>
+                    <div class="upload-zone" id="uploadZone">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <p>Drag & drop files here</p>
+                            <p class="hint">Supports .txt, .md, .pdf, .docx</p>
+                    </div>
+                    <input type="file" id="fileInput" accept=".txt,.md,.pdf,.docx" />
+
+                    <div class="progress-container" id="progressContainer">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text">Embedding via Gemini...</div>
+                    </div>
+
+                    <div class="upload-feedback" id="uploadFeedback"></div>
+                </div>
+
+                <!-- Stats Widget -->
+                <div class="stats-widget">
+                    <div class="stat-item">
+                        <span class="stat-label">Total Chunks</span>
+                        <span class="stat-value" id="totalChunks">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Last Updated</span>
+                        <span class="stat-value" id="lastUpdated">Never</span>
+                    </div>
+                </div>
+
+                <!-- Reset Button -->
+                <button class="btn btn-danger" id="resetBtn" style="width: 100%;">🔄 Reset Collection</button>
+            </div>
+
+            <!-- Right Column: Query & Results -->
+            <div>
+                <!-- Query Section -->
+                <div class="section">
+                    <h2>
+                        <span>🔍</span>
+                        Search
+                    </h2>
+                    <div class="query-container">
+                        <input
+                            type="text"
+                            id="queryInput"
+                            placeholder="Ask a question..."
+                            autocomplete="off"
+                        />
+                        <button class="btn btn-primary" id="askBtn">Ask</button>
+                    </div>
+
+                    <div id="queryStatus"></div>
+
+                    <!-- Results Section -->
+                    <div class="results-container" id="resultsContainer">
+                        <div class="empty-state">Results will appear here</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal" id="confirmModal">
+        <div class="modal-content">
+            <h3>Reset Collection?</h3>
+            <p>This will delete all documents from the collection. This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button class="btn btn-cancel" id="cancelBtn">Cancel</button>
+                <button class="btn btn-danger" id="confirmResetBtn">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const apiBase = window.API_BASE || "http://localhost:5001/api";
+
+        // DOM Elements
+        const uploadZone = document.getElementById("uploadZone");
+        const fileInput = document.getElementById("fileInput");
+        const progressContainer = document.getElementById("progressContainer");
+        const progressFill = document.getElementById("progressFill");
+        const uploadFeedback = document.getElementById("uploadFeedback");
+        const queryInput = document.getElementById("queryInput");
+        const askBtn = document.getElementById("askBtn");
+        const resultsContainer = document.getElementById("resultsContainer");
+        const queryStatus = document.getElementById("queryStatus");
+        const totalChunksEl = document.getElementById("totalChunks");
+        const lastUpdatedEl = document.getElementById("lastUpdated");
+        const resetBtn = document.getElementById("resetBtn");
+        const confirmModal = document.getElementById("confirmModal");
+        const cancelBtn = document.getElementById("cancelBtn");
+        const confirmResetBtn = document.getElementById("confirmResetBtn");
+
+        // Upload Zone Events
+        uploadZone.addEventListener("click", () => fileInput.click());
+
+        uploadZone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            uploadZone.classList.add("dragover");
+        });
+
+        uploadZone.addEventListener("dragleave", () => {
+            uploadZone.classList.remove("dragover");
+        });
+
+        uploadZone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            uploadZone.classList.remove("dragover");
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileUpload();
+            }
+        });
+
+        fileInput.addEventListener("change", handleFileUpload);
+
+        async function handleFileUpload() {
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            progressContainer.classList.add("visible");
+            uploadFeedback.classList.remove("visible");
+
+            // Simulate progress
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress = Math.min(progress + Math.random() * 30, 90);
+                progressFill.style.width = progress + "%";
+            }, 200);
+
+            try {
+                const response = await fetch(`${apiBase}/upload`, {
+                    method: "POST",
+                    body: formData,
+                });
+
+                clearInterval(progressInterval);
+                progressFill.style.width = "100%";
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || "Upload failed");
+                }
+
+                const result = await response.json();
+
+                showUploadSuccess(result);
+                fileInput.value = "";
+                updateStats();
+
+                setTimeout(() => {
+                    progressContainer.classList.remove("visible");
+                    progressFill.style.width = "0%";
+                }, 1000);
+
+            } catch (error) {
+                clearInterval(progressInterval);
+                progressFill.style.width = "0%";
+                showUploadError(error.message);
+            }
+        }
+
+        function showUploadSuccess(result) {
+            uploadFeedback.className = "upload-feedback visible success";
+            uploadFeedback.textContent = `✅ Uploaded: ${result.filename} (${result.chunk_count} chunks)`;
+        }
+
+        function showUploadError(message) {
+            uploadFeedback.className = "upload-feedback visible error";
+            uploadFeedback.textContent = `❌ Error: ${message}`;
+        }
+
+        // Query Handler
+        askBtn.addEventListener("click", handleQuery);
+        queryInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") handleQuery();
+        });
+
+        async function handleQuery() {
+            const question = queryInput.value.trim();
+            if (!question) return;
+
+            askBtn.disabled = true;
+            queryStatus.innerHTML = '<div class="status-text"><div class="spinner"></div> Searching...</div>';
+            resultsContainer.innerHTML = "";
+
+            try {
+                const response = await fetch(`${apiBase}/query`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    // Request server-side filtering and limit results
+                    body: JSON.stringify({ question, top_k: 3, min_score: 0.25 }),
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || "Query failed");
+                }
+
+                const result = await response.json();
+                displayResults(result.results, result.count);
+                queryStatus.innerHTML = "";
+
+            } catch (error) {
+                queryStatus.innerHTML = `<div style="color: #c62828; font-size: 14px;">❌ ${error.message}</div>`;
+                resultsContainer.innerHTML = '<div class="empty-state">Search failed. Please try again.</div>';
+            } finally {
+                askBtn.disabled = false;
+            }
+        }
+
+        function displayResults(results, count) {
+            if (results.length === 0) {
+                resultsContainer.innerHTML = "<div class=\"empty-state\">No results found</div>";
+                return;
+            }
+
+            // Limit client-side to top 3 results to avoid showing too many chunks
+            const limited = results.slice(0, 3);
+
+            resultsContainer.innerHTML = limited.map((result, index) => `
+                <div class="result-item">
+                    <div class="result-header">
+                        <span class="result-score">Score: ${(result.score * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="result-metadata">
+                        <div class="metadata-item">
+                            <span class="metadata-label">Source:</span>
+                            ${result.metadata.source}
+                        </div>
+                        <div class="metadata-item">
+                            <span class="metadata-label">Chunk:</span>
+                            #${result.metadata.chunk_id}
+                        </div>
+                    </div>
+                    <div class="result-text">${escapeHtml(result.text)}</div>
+                </div>
+            `).join("");
+        }
+
+        // Stats
+        async function updateStats() {
+            try {
+                const response = await fetch(`${apiBase}/stats`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && typeof data.chunk_count !== "undefined") {
+                        totalChunksEl.textContent = data.chunk_count;
+                    }
+                    const now = new Date().toLocaleTimeString();
+                    lastUpdatedEl.textContent = now;
+                }
+            } catch (error) {
+                console.error("Failed to fetch stats:", error);
+            }
+        }
+
+        // Reset Handler
+        resetBtn.addEventListener("click", () => {
+            confirmModal.classList.add("visible");
+        });
+
+        cancelBtn.addEventListener("click", () => {
+            confirmModal.classList.remove("visible");
+        });
+
+        confirmResetBtn.addEventListener("click", async () => {
+            confirmModal.classList.remove("visible");
+            resetBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${apiBase}/reset`, {
+                    method: "DELETE",
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    alert(`Reset failed: ${error.error}`);
+                    return;
+                }
+
+                alert("Collection reset successfully");
+                totalChunksEl.textContent = "0";
+                updateStats();
+
+            } catch (error) {
+                alert(`Reset failed: ${error.message}`);
+            } finally {
+                resetBtn.disabled = false;
+            }
+        });
+
+        // Modal close on outside click
+        confirmModal.addEventListener("click", (e) => {
+            if (e.target === confirmModal) {
+                confirmModal.classList.remove("visible");
+            }
+        });
+
+        // Utility function
+        function escapeHtml(text) {
+            const div = document.createElement("div");
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initialize stats
+        updateStats();
+    </script>
+</body>
+</html>

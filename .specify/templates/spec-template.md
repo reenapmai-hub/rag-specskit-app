@@ -90,6 +90,12 @@
 - **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
 - **FR-005**: System MUST [behavior, e.g., "log all security events"]
 
+<!-- RAG-specific mandatory requirements (aligned with constitution) -->
+- **FR-RAG-001**: System MUST use ChromaDB Cloud (v2 API) for vector storage in any deployment claiming "cloud-first" compliance.
+- **FR-RAG-002**: Embeddings MUST be created via a managed embeddings API (e.g., Gemini); the system MUST NOT require local embedding computation.
+- **FR-RAG-003**: Integration tests MUST include an upload→query→reset lifecycle executed with ephemeral or real credentials before feature sign-off.
+- **FR-RAG-004**: Dependency constraints MUST be documented: `chromadb >=0.6.0`, `numpy <2.0.0`.
+
 *Example of marking unclear requirements:*
 
 - **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]

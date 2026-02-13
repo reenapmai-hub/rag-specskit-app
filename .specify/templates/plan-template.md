@@ -30,8 +30,16 @@
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+The implementation MUST verify compatibility with the project's constitution. For RAG-focused features the following gates are required:
 
-[Gates determined based on constitution file]
+- Cloud storage: Use ChromaDB Cloud (v2 API) for vector storage; local vector stores are NOT allowed for production or gated CI that claims cloud compliance.
+- Embeddings: Use managed embeddings provider (Gemini API) for all embedding operations; no local embeddings.
+- Dependency constraints: `chromadb >=0.6.0`, `numpy <2.0.0`.
+- Secrets: All keys MUST be provided via environment variables or a secrets manager.
+- Port defaults: Backend services MUST default to port `5001` (override via `PORT` env var only).
+- Integration test requirement: Provide an integration test that runs the upload→query→reset cycle using ephemeral/real credentials in a gated environment before marking the feature done.
+
+The plan author MUST list how each gate will be validated and where integration tests will run (local dev with ephemeral keys, gated CI job, or cloud-only test harness).
 
 ## Project Structure
 
